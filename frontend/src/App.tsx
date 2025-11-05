@@ -1,4 +1,4 @@
- import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import TrainerSessions from "./pages/trainer/TrainerSessions";
 import TrainerReports from "./pages/trainer/Reports";
 import TrainerProfile from "./pages/trainer/TrainerProfile";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -34,19 +35,59 @@ const App = () => (
           <Route path="/trainer" element={<Navigate to="/auth?role=trainer" replace />} />
           <Route path="/trainer/login" element={<Navigate to="/auth?role=trainer" replace />} />
 
-          {/* Member Routes */}
-          <Route path="/member/dashboard" element={<MemberDashboard />} />
-          <Route path="/member/workouts" element={<Workouts />} />
-          <Route path="/member/sessions" element={<Sessions />} />
-          <Route path="/member/progress" element={<MemberProgress />} />
-          <Route path="/member/profile" element={<MemberProfile />} />
+          {/* Member Routes - Protected */}
+          <Route path="/member/dashboard" element={
+            <ProtectedRoute requiredRole="member">
+              <MemberDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/member/workouts" element={
+            <ProtectedRoute requiredRole="member">
+              <Workouts />
+            </ProtectedRoute>
+          } />
+          <Route path="/member/sessions" element={
+            <ProtectedRoute requiredRole="member">
+              <Sessions />
+            </ProtectedRoute>
+          } />
+          <Route path="/member/progress" element={
+            <ProtectedRoute requiredRole="member">
+              <MemberProgress />
+            </ProtectedRoute>
+          } />
+          <Route path="/member/profile" element={
+            <ProtectedRoute requiredRole="member">
+              <MemberProfile />
+            </ProtectedRoute>
+          } />
           
-          {/* Trainer Routes */}
-          <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
-          <Route path="/trainer/members" element={<TrainerMembers />} />
-          <Route path="/trainer/sessions" element={<TrainerSessions />} />
-          <Route path="/trainer/reports" element={<TrainerReports />} />
-          <Route path="/trainer/profile" element={<TrainerProfile />} />
+          {/* Trainer Routes - Protected */}
+          <Route path="/trainer/dashboard" element={
+            <ProtectedRoute requiredRole="trainer">
+              <TrainerDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/trainer/members" element={
+            <ProtectedRoute requiredRole="trainer">
+              <TrainerMembers />
+            </ProtectedRoute>
+          } />
+          <Route path="/trainer/sessions" element={
+            <ProtectedRoute requiredRole="trainer">
+              <TrainerSessions />
+            </ProtectedRoute>
+          } />
+          <Route path="/trainer/reports" element={
+            <ProtectedRoute requiredRole="trainer">
+              <TrainerReports />
+            </ProtectedRoute>
+          } />
+          <Route path="/trainer/profile" element={
+            <ProtectedRoute requiredRole="trainer">
+              <TrainerProfile />
+            </ProtectedRoute>
+          } />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -1,4 +1,4 @@
- # backend/models/user.py
+# backend/models/user.py
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
 from . import Base  # مهم
@@ -11,6 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String(20), nullable=False)  # "member" | "trainer"
+    phone = Column(String(20), nullable=True)  # رقم الهاتف
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow,

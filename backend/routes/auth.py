@@ -39,8 +39,8 @@ def register():
         db.commit()
         db.refresh(user)
 
-        # إنشاء توكن JWT
-        token = create_access_token(identity={"id": user.id, "role": user.role})
+        # إنشاء توكن JWT - store user ID as string
+        token = create_access_token(identity=str(user.id))
 
         return jsonify({
             "ok": True,
@@ -69,7 +69,7 @@ def login():
         if not user or not verify_password(password, user.password_hash):
             return jsonify({"error": "invalid credentials"}), 401
 
-        token = create_access_token(identity={"id": user.id, "role": user.role})
+        token = create_access_token(identity=str(user.id))
 
         return jsonify({
             "ok": True,
