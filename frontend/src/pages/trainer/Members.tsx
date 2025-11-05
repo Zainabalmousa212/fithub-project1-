@@ -1,13 +1,14 @@
- // src/pages/trainer/Members.tsx
+// src/pages/trainer/Members.tsx
 import { useEffect, useMemo, useState } from "react";
 import TrainerLayout from "@/components/TrainerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, User, Mail, Phone, Calendar, TrendingUp, Loader2 } from "lucide-react";
+import { Search, Plus, User, Mail, Phone, Calendar, TrendingUp, Loader2, Eye, BarChart3, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { get, post } from "@/lib/api";
+import { get, post, del } from "@/lib/api";
+import { toast } from "sonner";
 
 type Member = {
   id: number | string;
@@ -33,12 +34,18 @@ export default function TrainerMembers() {
   const [newPhone, setNewPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // view details dialog state
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [removing, setRemoving] = useState(false);
+
   // جلب الأعضاء من الباك
   async function fetchMembers() {
     try {
       setLoading(true);
       setErrorMsg(null);
-      const data = await get<Member[]>("/members"); // GET /api/members
+      //  *****هنا تم تغيير من  members  الى api / members
+      const data = await get<Member[]>("/api/members"); // GET /api/members
       setMembers(data);
     } catch (err: any) {
       setErrorMsg(typeof err?.message === "string" ? err.message : "Failed to load members");
@@ -66,7 +73,8 @@ export default function TrainerMembers() {
   async function handleAdd() {
     setSaving(true);
     try {
-      const created = await post<Member>("/members", {
+      // *** تم تغيير من  /api/members الى /members
+      const created = await post<Member>("/api/members", {
         name: newName,
         email: newEmail,
         phone: newPhone,
@@ -74,10 +82,55 @@ export default function TrainerMembers() {
       setMembers((prev) => [created, ...prev]);
       setOpen(false);
       setNewName(""); setNewEmail(""); setNewPhone("");
+      toast.success("Member added successfully!");
     } catch (err: any) {
-      alert(typeof err?.message === "string" ? err.message : "Failed to add member");
+      toast.error(typeof err?.message === "string" ? err.message : "Failed to add member");
     } finally {
       setSaving(false);
+    }
+  }
+
+  // فتح تفاصيل العضو
+  function handleViewDetails(member: Member) {
+    setSelectedMember(member);
+    setDetailsOpen(true);
+  }
+
+  // عرض معلومات العضو
+  function handleViewInfo() {
+    if (!selectedMember) return;
+    toast.info(`Viewing info for ${selectedMember.name}`);
+    // يمكنك هنا فتح صفحة أو dialog آخر لعرض التفاصيل الكاملة
+  }
+
+  // عرض تقدم العضو
+  function handleViewProgress() {
+    if (!selectedMember) return;
+    toast.info(`Viewing progress for ${selectedMember.name}`);
+    // يمكنك هنا فتح صفحة أو dialog آخر لعرض التقدم
+  }
+
+  // حذف العضو
+  async function handleRemoveMember() {
+    if (!selectedMember) return;
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${selectedMember.name}? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    setRemoving(true);
+    try {
+      await del(`/api/members/${selectedMember.id}`); // DELETE /api/members/:id
+      setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
+      setDetailsOpen(false);
+      setSelectedMember(null);
+      toast.success("Member removed successfully!");
+    } catch (err: any) {
+      toast.error(typeof err?.message === "string" ? err.message : "Failed to remove member");
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -223,7 +276,11 @@ export default function TrainerMembers() {
                       <span className="text-muted-foreground">Last: {member.lastActive}</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleViewDetails(member)}
+                  >
                     View Details
                   </Button>
                 </CardContent>
@@ -231,6 +288,67 @@ export default function TrainerMembers() {
             ))}
           </div>
         )}
+
+        {/* View Details Dialog */}
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Member Actions</DialogTitle>
+            </DialogHeader>
+            {selectedMember && (
+              <div className="space-y-4 py-4">
+                <div className="flex items-center gap-3 pb-4 border-b">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{selectedMember.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedMember.email}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleViewInfo}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Member Info
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleViewProgress}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Progress
+                  </Button>
+
+                  <Button 
+                    variant="destructive" 
+                    className="w-full justify-start"
+                    onClick={handleRemoveMember}
+                    disabled={removing}
+                  >
+                    {removing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Member
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </TrainerLayout>
   );
