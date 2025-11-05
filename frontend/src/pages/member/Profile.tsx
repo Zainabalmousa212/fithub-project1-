@@ -1,28 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MemberLayout from "@/components/MemberLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, Calendar, Award } from "lucide-react";
+import { User, Mail, Phone, Calendar, Award, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { get, put } from "@/lib/api";
 
 const MemberProfile = () => {
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+966 XXX XXXX",
-    joinDate: "January 2025",
+    name: "",
+    email: "",
+    phone: "",
+    joinDate: "",
     membership: "Premium",
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+  // Fetch profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const data = await get<{
+          name: string;
+          email: string;
+          phone: string;
+          joinDate: string;
+          membership: string;
+        }>("/members/me");
+        setProfile(data);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const updatedData = await put<{
+        name: string;
+        email: string;
+        phone: string;
+        joinDate: string;
+        membership: string;
+      }>("/members/me", {
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+      });
+      
+      setProfile(updatedData);
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <MemberLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading profile...</span>
+          </div>
+        </div>
+      </MemberLayout>
+    );
+  }
 
   return (
     <MemberLayout>
@@ -57,10 +116,23 @@ const MemberProfile = () => {
                 </Button>
               ) : (
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditing(false)}
+                    disabled={saving}
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
                 </div>
               )}
             </CardHeader>

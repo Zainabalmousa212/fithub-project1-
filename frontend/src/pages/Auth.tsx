@@ -48,41 +48,53 @@ export default function Auth() {
   };
 
   async function handleSubmit() {
-    console.log("[Auth] handleSubmit clicked"); // للتشخيص السريع
+    console.log("[Auth] handleSubmit clicked");
     setErrorMsg(null);
     setLoading(true);
     try {
       if (isLogin) {
         // ---- LOGIN ----
-        const res = await post<{ token: string; role: "member" | "trainer" }>(
+        const res = await post<{ token: string; role: "member" | "trainer"; user: any }>(
           "/auth/login",
-          { email, password, role }
+          { email, password }
         );
 
-        // حفظ التوكن + الدور (fallback لو ما فيه res.role)
-        localStorage.setItem("token", res.token);
-        const _role = (res as any).role ?? (res as any)?.user?.role ?? "member";
-        localStorage.setItem("role", _role);
+        console.log("[Auth] Login response:", res);
 
-        // توجيه حسب الدور
-        if (_role === "trainer") navigate("/trainer/dashboard");
-        else navigate("/member/dashboard");
+        // Save token and role from backend response
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("role", res.role);
+
+        console.log("[Auth] Stored role:", res.role);
+
+        // Navigate based on the role from backend
+        if (res.role === "trainer") {
+          navigate("/trainer/dashboard");
+        } else {
+          navigate("/member/dashboard");
+        }
 
       } else {
         // ---- REGISTER ----
-        const res = await post<{ token: string; role: "member" | "trainer" }>(
+        const res = await post<{ token: string; role: "member" | "trainer"; user: any }>(
           "/auth/register",
           { fullName, email, password, role }
         );
 
-        // حفظ التوكن + الدور
-        localStorage.setItem("token", res.token);
-        const _role = (res as any).role ?? (res as any)?.user?.role ?? "member";
-        localStorage.setItem("role", _role);
+        console.log("[Auth] Register response:", res);
 
-        // توجيه حسب الدور
-        if (_role === "trainer") navigate("/trainer/dashboard");
-        else navigate("/member/dashboard");
+        // Save token and role from backend response
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("role", res.role);
+
+        console.log("[Auth] Stored role:", res.role);
+
+        // Navigate based on the role from backend
+        if (res.role === "trainer") {
+          navigate("/trainer/dashboard");
+        } else {
+          navigate("/member/dashboard");
+        }
       }
     } catch (err: any) {
       const text = typeof err?.message === "string" ? err.message : "Request failed";

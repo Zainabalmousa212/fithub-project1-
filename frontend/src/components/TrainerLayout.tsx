@@ -18,7 +18,8 @@ const TrainerLayout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
     navigate("/auth");
   };
 
